@@ -1,0 +1,53 @@
+//node
+node('master')
+{
+echo "GitHub BranhName ${env.BRANCH_NAME}"
+  echo "Jenkins Job Number ${env.BUILD_NUMBER}"
+  echo "Jenkins Node Name ${env.NODE_NAME}"
+  
+  echo "Jenkins Home ${env.JENKINS_HOME}"
+  echo "Jenkins URL ${env.JENKINS_URL}"
+  echo "JOB Name ${env.JOB_NAME}"
+
+ def mavenhome=tool name:"maven3.6.2", type:"maven"
+ 
+ stage('source code-test')
+ {
+ git branch: 'development', credentialsId: '3f1f7c72-ca79-410d-9569-78ed11ef18d7', url: 'https://github.com/199sreekanth/maven-web-application.git'
+ }
+ stage('build'){
+ 
+ sh "${mavenhome}/bin/mvn clean package"
+ }
+ 
+ stage('sonarqube report'){
+ 
+  sh "${mavenhome}/bin/mvn clean sonar:sonar"
+ }
+
+ stage('upload artifacroty nexus'){
+ 
+  sh "${mavenhome}/bin/mvn clean deploy"
+ }
+ stage('deploy app into tomcat'){
+ sshagent(['2ab36659-5649-40d7-addb-9a5915a7bf72']) {
+    
+	sh "scp -o StrictHostKeyChecking=no target/maven-web-application.war ec2-user@13.127.194.185:/opt/apache-tomcat-9.0.24/webapps/maven-web-application.war"
+}
+
+ }
+ 
+ stage('email notification'){
+ emailext body: '''build is over
+
+regards
+sreekanth
+bangalore''', subject: 'build is over-mss', to: 'kaminisreekanth199@gmail.com'
+ }
+ 
+ 
+
+
+
+
+}
